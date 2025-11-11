@@ -1,0 +1,42 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Error rules
+    avoid_print: true
+    avoid_returning_null_for_void: true
+    cancel_subscriptions: true
+    close_sinks: true
+    
+    # Style rules
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_final_fields: true
+    prefer_final_locals: true
+    prefer_single_quotes: true
+    
+    # Formatting
+    always_put_required_named_parameters_first: true
+    avoid_unnecessary_containers: true
+    sized_box_for_whitespace: true
+    
+    # Performance
+    avoid_function_literals_in_foreach_calls: true
+    
+    # Documentation
+    comment_references: true
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+  
+  errors:
+    # Treat missing required parameters as errors
+    missing_required_param: error
+    
+    # Treat missing returns as errors
+    missing_return: error
+    
+    # Allow TODO comments during development
+    todo: ignore
