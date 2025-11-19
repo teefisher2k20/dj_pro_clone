@@ -70,7 +70,12 @@ class _DJDemoPageState extends State<DJDemoPage> {
       body: Column(
         children: [
           // Master controls
-          _buildMasterControls(),
+          _MasterControls(
+            masterVolume: masterVolume,
+            deckATempo: deckATempo,
+            deckBTempo: deckBTempo,
+            onMasterVolumeChanged: (value) => setState(() => masterVolume = value),
+          ),
           
           const Divider(height: 1),
           
@@ -80,7 +85,7 @@ class _DJDemoPageState extends State<DJDemoPage> {
               children: [
                 // Deck A
                 Expanded(
-                  child: _buildDeck(
+                  child: _Deck(
                     deckName: 'DECK A',
                     isPlaying: deckAPlaying,
                     volume: deckAVolume,
@@ -100,7 +105,7 @@ class _DJDemoPageState extends State<DJDemoPage> {
                 
                 // Deck B
                 Expanded(
-                  child: _buildDeck(
+                  child: _Deck(
                     deckName: 'DECK B',
                     isPlaying: deckBPlaying,
                     volume: deckBVolume,
@@ -124,13 +129,31 @@ class _DJDemoPageState extends State<DJDemoPage> {
           const Divider(height: 1),
           
           // Crossfader section
-          _buildCrossfader(),
+          _Crossfader(
+            crossfader: crossfader,
+            onCrossfaderChanged: (value) => setState(() => crossfader = value),
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildMasterControls() {
+class _MasterControls extends StatelessWidget {
+  final double masterVolume;
+  final double deckATempo;
+  final double deckBTempo;
+  final ValueChanged<double> onMasterVolumeChanged;
+
+  const _MasterControls({
+    required this.masterVolume,
+    required this.deckATempo,
+    required this.deckBTempo,
+    required this.onMasterVolumeChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       color: Colors.grey[850],
@@ -143,7 +166,7 @@ class _DJDemoPageState extends State<DJDemoPage> {
           Expanded(
             child: Slider(
               value: masterVolume,
-              onChanged: (value) => setState(() => masterVolume = value),
+              onChanged: onMasterVolumeChanged,
               activeColor: Colors.deepPurple,
             ),
           ),
@@ -157,17 +180,31 @@ class _DJDemoPageState extends State<DJDemoPage> {
       ),
     );
   }
+}
 
-  Widget _buildDeck({
-    required String deckName,
-    required bool isPlaying,
-    required double volume,
-    required double tempo,
-    required Color color,
-    required VoidCallback onPlayPause,
-    required ValueChanged<double> onVolumeChange,
-    required ValueChanged<double> onTempoChange,
-  }) {
+class _Deck extends StatelessWidget {
+  final String deckName;
+  final bool isPlaying;
+  final double volume;
+  final double tempo;
+  final Color color;
+  final VoidCallback onPlayPause;
+  final ValueChanged<double> onVolumeChange;
+  final ValueChanged<double> onTempoChange;
+
+  const _Deck({
+    required this.deckName,
+    required this.isPlaying,
+    required this.volume,
+    required this.tempo,
+    required this.color,
+    required this.onPlayPause,
+    required this.onVolumeChange,
+    required this.onTempoChange,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -202,7 +239,7 @@ class _DJDemoPageState extends State<DJDemoPage> {
           
           // Waveform visualization
           Expanded(
-            child: _buildWaveform(color, isPlaying),
+            child: _Waveform(color: color, isPlaying: isPlaying),
           ),
           const SizedBox(height: 16),
           
@@ -282,18 +319,26 @@ class _DJDemoPageState extends State<DJDemoPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildCueButton('1', Colors.red),
-              _buildCueButton('2', Colors.orange),
-              _buildCueButton('3', Colors.green),
-              _buildCueButton('4', Colors.blue),
+              _CueButton(label: '1', color: Colors.red),
+              _CueButton(label: '2', color: Colors.orange),
+              _CueButton(label: '3', color: Colors.green),
+              _CueButton(label: '4', color: Colors.blue),
             ],
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildWaveform(Color color, bool isPlaying) {
+class _Waveform extends StatelessWidget {
+  final Color color;
+  final bool isPlaying;
+
+  const _Waveform({required this.color, required this.isPlaying});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.black,
@@ -307,8 +352,16 @@ class _DJDemoPageState extends State<DJDemoPage> {
       ),
     );
   }
+}
 
-  Widget _buildCueButton(String label, Color color) {
+class _CueButton extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _CueButton({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -322,8 +375,16 @@ class _DJDemoPageState extends State<DJDemoPage> {
       child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
     );
   }
+}
 
-  Widget _buildCrossfader() {
+class _Crossfader extends StatelessWidget {
+  final double crossfader;
+  final ValueChanged<double> onCrossfaderChanged;
+
+  const _Crossfader({required this.crossfader, required this.onCrossfaderChanged});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
       color: Colors.grey[850],
@@ -340,7 +401,7 @@ class _DJDemoPageState extends State<DJDemoPage> {
               Expanded(
                 child: Slider(
                   value: crossfader,
-                  onChanged: (value) => setState(() => crossfader = value),
+                  onChanged: onCrossfaderChanged,
                   activeColor: crossfader < 0.5 ? Colors.blue : Colors.red,
                 ),
               ),
