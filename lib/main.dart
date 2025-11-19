@@ -130,6 +130,17 @@ class _DJDemoPageState extends State<DJDemoPage> {
     );
   }
 
+  int _calculateBpm() {
+    if (deckAPlaying && !deckBPlaying) {
+      return deckATempo.toInt();
+    } else if (!deckAPlaying && deckBPlaying) {
+      return deckBTempo.toInt();
+    } else {
+      // If both are playing or neither is playing, show the average.
+      return ((deckATempo + deckBTempo) / 2).toInt();
+    }
+  }
+
   Widget _buildMasterControls() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -150,7 +161,7 @@ class _DJDemoPageState extends State<DJDemoPage> {
           Text('${(masterVolume * 100).toInt()}%'),
           const SizedBox(width: 24),
           Text(
-            'BPM: ${((deckATempo + deckBTempo) / 2).toInt()}',
+            'BPM: ${_calculateBpm()}',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ],
