@@ -56,3 +56,11 @@ waveform_cache/
 *.user
 .vscode/launch.json
 .vscode/settings.json
+
+# JDK installations (should not be in repo)
+oracleJdk*/
+jdk*/
+
+# Analysis and diagnostic files
+analysis_results*.txt
+doctor_output.txt
