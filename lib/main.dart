@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:djay_pro_clone/ui/widgets/track_loader.dart';
+
 
 void main() {
   runApp(const DJProCloneApp());
@@ -37,11 +38,15 @@ class _DJDemoPageState extends State<DJDemoPage> {
   bool deckAPlaying = false;
   double deckAVolume = 0.75;
   double deckATempo = 100.0;
+  String? deckATrack;
+  String? deckASource;
   
   // Deck B controls
   bool deckBPlaying = false;
   double deckBVolume = 0.75;
   double deckBTempo = 100.0;
+  String? deckBTrack;
+  String? deckBSource;
   
   // Crossfader (0.0 = Deck A, 0.5 = Center, 1.0 = Deck B)
   double crossfader = 0.5;
@@ -100,6 +105,14 @@ class _DJDemoPageState extends State<DJDemoPage> {
                     onTempoChange: (value) {
                       setState(() => deckATempo = value);
                     },
+                    loadedTrack: deckATrack,
+                    trackSource: deckASource,
+                    onTrackLoad: (track, source) {
+                      setState(() {
+                        deckATrack = track;
+                        deckASource = source;
+                      });
+                    },
                   ),
                 ),
                 
@@ -119,6 +132,14 @@ class _DJDemoPageState extends State<DJDemoPage> {
                     },
                     onTempoChange: (value) {
                       setState(() => deckBTempo = value);
+                    },
+                    loadedTrack: deckBTrack,
+                    trackSource: deckBSource,
+                    onTrackLoad: (track, source) {
+                      setState(() {
+                        deckBTrack = track;
+                        deckBSource = source;
+                      });
                     },
                   ),
                 ),
@@ -182,6 +203,21 @@ class _MasterControls extends StatelessWidget {
   }
 }
 
+<<<<<<< HEAD
+  Widget _buildDeck({
+    required String deckName,
+    required bool isPlaying,
+    required double volume,
+    required double tempo,
+    required Color color,
+    required VoidCallback onPlayPause,
+    required ValueChanged<double> onVolumeChange,
+    required ValueChanged<double> onTempoChange,
+    required Function(String?, String?) onTrackLoad,
+    String? loadedTrack,
+    String? trackSource,
+  }) {
+=======
 class _Deck extends StatelessWidget {
   final String deckName;
   final bool isPlaying;
@@ -205,6 +241,7 @@ class _Deck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+>>>>>>> 42e866125f5f7edb46f98fb1404c5162bc3ad560
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -220,21 +257,51 @@ class _Deck extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           
-          // Track name
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey[800],
-              borderRadius: BorderRadius.circular(8),
+          // Track loader or display
+          if (loadedTrack == null)
+            TrackLoader(
+              onTrackLoaded: onTrackLoad,
+              color: color,
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[800],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: color.withValues(alpha: 0.5)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.music_note, size: 16, color: color),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          loadedTrack,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          trackSource ?? 'Unknown Source',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: color.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.eject, size: 20),
+                    onPressed: () => onTrackLoad(null, null),
+                    tooltip: 'Eject Track',
+                  ),
+                ],
+              ),
             ),
-            child: const Row(
-              children: [
-                Icon(Icons.music_note, size: 16),
-                SizedBox(width: 8),
-                Text('Demo Track - House Mix.mp3'),
-              ],
-            ),
-          ),
           const SizedBox(height: 16),
           
           // Waveform visualization
@@ -343,12 +410,12 @@ class _Waveform extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Center(
         child: isPlaying
             ? Icon(Icons.graphic_eq, size: 64, color: color)
-            : Icon(Icons.show_chart, size: 64, color: color.withOpacity(0.3)),
+            : Icon(Icons.show_chart, size: 64, color: color.withValues(alpha: 0.3)),
       ),
     );
   }
