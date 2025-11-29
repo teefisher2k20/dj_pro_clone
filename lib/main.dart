@@ -155,6 +155,9 @@ class _DJDemoPageState extends State<DJDemoPage> {
             crossfader: crossfader,
             onCrossfaderChanged: (value) => setState(() => crossfader = value),
           ),
+
+          // Video player section
+          // Video player section removed
         ],
       ),
     );

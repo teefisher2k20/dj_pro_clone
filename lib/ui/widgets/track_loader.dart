@@ -111,6 +111,18 @@ class TrackLoader extends StatelessWidget {
               label: 'Beatport',
               onTap: () => _mockServiceLoad(context, 'Beatport'),
             ),
+            _buildOption(
+              context,
+              icon: Icons.video_library,
+              label: 'YouTube',
+              onTap: () => _mockServiceLoad(context, 'YouTube'),
+            ),
+            _buildOption(
+              context,
+              icon: Icons.music_video,
+              label: 'YouTube Music',
+              onTap: () => _mockServiceLoad(context, 'YouTube Music'),
+            ),
           ],
         ),
       ),
@@ -163,9 +175,17 @@ class TrackLoader extends StatelessWidget {
 
     Future.delayed(const Duration(seconds: 1), () {
       if (context.mounted) {
-        // Provide a dummy audio URL for streaming services
-        onTrackLoaded('Top Hit from $serviceName',
-            'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+        String url;
+        if (serviceName == 'YouTube') {
+          url =
+              'https://www.youtube.com/watch?v=2Vv-BfVoq4g'; // Example YouTube video
+        } else if (serviceName == 'YouTube Music') {
+          url =
+              'https://music.youtube.com/watch?v=2Vv-BfVoq4g'; // Example YouTube Music track
+        } else {
+          url = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+        }
+        onTrackLoaded('Top Hit from $serviceName', url);
       }
     });
   }
