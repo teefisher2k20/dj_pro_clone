@@ -1,0 +1,24 @@
+final audioService = AudioService();
+
+void _loadTrackData(bool isDeckA) async {
+  final waveform = await audioService.getWaveformData(isDeckA: isDeckA);
+  final beats = await audioService.getBeatPositions(isDeckA: isDeckA);
+  audioService.playbackPositionStream(isDeckA: isDeckA).listen((position) {
+    setState(() {
+      playbackPosition = position;
+    });
+  });
+  setState(() {
+    waveformData = waveform;
+    beatPositions = beats;
+  });
+}
+
+// When loading a track, also set videoUrl from your Track model
+_Deck(
+  // ...other props
+  waveformData: waveformData,
+  beatPositions: beatPositions,
+  playbackPosition: playbackPosition,
+  videoUrl: track?.videoUrl,
+)

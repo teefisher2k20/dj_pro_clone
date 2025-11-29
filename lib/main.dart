@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:djay_pro_clone/ui/widgets/track_loader.dart';
-
+import 'package:djay_pro_clone/ui/widgets/waveform_painter.dart';
 
 void main() {
   runApp(const DJProCloneApp());
@@ -40,17 +40,17 @@ class _DJDemoPageState extends State<DJDemoPage> {
   double deckATempo = 100.0;
   String? deckATrack;
   String? deckASource;
-  
+
   // Deck B controls
   bool deckBPlaying = false;
   double deckBVolume = 0.75;
   double deckBTempo = 100.0;
   String? deckBTrack;
   String? deckBSource;
-  
+
   // Crossfader (0.0 = Deck A, 0.5 = Center, 1.0 = Deck B)
   double crossfader = 0.5;
-  
+
   // Master volume
   double masterVolume = 0.8;
 
@@ -79,11 +79,12 @@ class _DJDemoPageState extends State<DJDemoPage> {
             masterVolume: masterVolume,
             deckATempo: deckATempo,
             deckBTempo: deckBTempo,
-            onMasterVolumeChanged: (value) => setState(() => masterVolume = value),
+            onMasterVolumeChanged: (value) =>
+                setState(() => masterVolume = value),
           ),
-          
+
           const Divider(height: 1),
-          
+
           // Deck displays
           Expanded(
             child: Row(
@@ -115,7 +116,7 @@ class _DJDemoPageState extends State<DJDemoPage> {
                     },
                   ),
                 ),
-                
+
                 // Deck B
                 Expanded(
                   child: _Deck(
@@ -146,9 +147,9 @@ class _DJDemoPageState extends State<DJDemoPage> {
               ],
             ),
           ),
-          
+
           const Divider(height: 1),
-          
+
           // Crossfader section
           _Crossfader(
             crossfader: crossfader,
@@ -203,21 +204,6 @@ class _MasterControls extends StatelessWidget {
   }
 }
 
-<<<<<<< HEAD
-  Widget _buildDeck({
-    required String deckName,
-    required bool isPlaying,
-    required double volume,
-    required double tempo,
-    required Color color,
-    required VoidCallback onPlayPause,
-    required ValueChanged<double> onVolumeChange,
-    required ValueChanged<double> onTempoChange,
-    required Function(String?, String?) onTrackLoad,
-    String? loadedTrack,
-    String? trackSource,
-  }) {
-=======
 class _Deck extends StatelessWidget {
   final String deckName;
   final bool isPlaying;
@@ -227,6 +213,15 @@ class _Deck extends StatelessWidget {
   final VoidCallback onPlayPause;
   final ValueChanged<double> onVolumeChange;
   final ValueChanged<double> onTempoChange;
+  final String? loadedTrack;
+  final String? trackSource;
+  final Function(String?, String?) onTrackLoad;
+
+  // Demo/mock waveform, beat, and video data
+  final List<double> waveformData;
+  final List<double> beatPositions;
+  final double playbackPosition;
+  final String? videoUrl;
 
   const _Deck({
     required this.deckName,
@@ -237,11 +232,21 @@ class _Deck extends StatelessWidget {
     required this.onPlayPause,
     required this.onVolumeChange,
     required this.onTempoChange,
-  });
+    required this.loadedTrack,
+    required this.trackSource,
+    required this.onTrackLoad,
+    List<double>? waveformData,
+    List<double>? beatPositions,
+    double? playbackPosition,
+    String? videoUrl,
+  })  : waveformData =
+            waveformData ?? const [0.2, 0.5, 0.8, 0.6, 0.3, 0.7, 0.9, 0.4],
+        beatPositions = beatPositions ?? const [0.1, 0.3, 0.5, 0.7, 0.9],
+        playbackPosition = playbackPosition ?? 0.5,
+        videoUrl = videoUrl;
 
   @override
   Widget build(BuildContext context) {
->>>>>>> 42e866125f5f7edb46f98fb1404c5162bc3ad560
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -256,60 +261,27 @@ class _Deck extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           // Track loader or display
-          if (loadedTrack == null)
-            TrackLoader(
-              onTrackLoaded: onTrackLoad,
-              color: color,
-            )
-          else
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[800],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: color.withValues(alpha: 0.5)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.music_note, size: 16, color: color),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          loadedTrack,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          trackSource ?? 'Unknown Source',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: color.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.eject, size: 20),
-                    onPressed: () => onTrackLoad(null, null),
-                    tooltip: 'Eject Track',
-                  ),
-                ],
-              ),
-            ),
-          const SizedBox(height: 16),
-          
-          // Waveform visualization
-          Expanded(
-            child: _Waveform(color: color, isPlaying: isPlaying),
+          TrackLoader(
+            onTrackLoaded: onTrackLoad,
+            color: color,
           ),
           const SizedBox(height: 16),
-          
+
+          // Waveform & video visualization
+          Expanded(
+            child: _Waveform(
+              color: color,
+              isPlaying: isPlaying,
+              waveformData: waveformData,
+              playbackPosition: playbackPosition,
+              beatPositions: beatPositions,
+              videoUrl: videoUrl,
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // Transport controls
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -349,7 +321,7 @@ class _Deck extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Volume control
           Row(
             children: [
@@ -364,7 +336,7 @@ class _Deck extends StatelessWidget {
               Text('${(volume * 100).toInt()}%'),
             ],
           ),
-          
+
           // Tempo control
           Row(
             children: [
@@ -381,9 +353,9 @@ class _Deck extends StatelessWidget {
               Text('${tempo.toInt()}%'),
             ],
           ),
-          
+
           // Hot cue buttons
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _CueButton(label: '1', color: Colors.red),
@@ -401,8 +373,19 @@ class _Deck extends StatelessWidget {
 class _Waveform extends StatelessWidget {
   final Color color;
   final bool isPlaying;
+  final List<double> waveformData;
+  final double playbackPosition;
+  final List<double> beatPositions;
+  final String? videoUrl;
 
-  const _Waveform({required this.color, required this.isPlaying});
+  const _Waveform({
+    required this.color,
+    required this.isPlaying,
+    required this.waveformData,
+    required this.playbackPosition,
+    required this.beatPositions,
+    this.videoUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -410,12 +393,15 @@ class _Waveform extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
-      child: Center(
-        child: isPlaying
-            ? Icon(Icons.graphic_eq, size: 64, color: color)
-            : Icon(Icons.show_chart, size: 64, color: color.withValues(alpha: 0.3)),
+      child: CustomPaint(
+        painter: WaveformPainter(
+          waveformData: waveformData,
+          playbackPosition: playbackPosition,
+          beatPositions: beatPositions,
+        ),
+        child: Container(),
       ),
     );
   }
@@ -448,7 +434,8 @@ class _Crossfader extends StatelessWidget {
   final double crossfader;
   final ValueChanged<double> onCrossfaderChanged;
 
-  const _Crossfader({required this.crossfader, required this.onCrossfaderChanged});
+  const _Crossfader(
+      {required this.crossfader, required this.onCrossfaderChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -464,7 +451,9 @@ class _Crossfader extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Text('A', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+              const Text('A',
+                  style: TextStyle(
+                      color: Colors.blue, fontWeight: FontWeight.bold)),
               Expanded(
                 child: Slider(
                   value: crossfader,
@@ -472,7 +461,9 @@ class _Crossfader extends StatelessWidget {
                   activeColor: crossfader < 0.5 ? Colors.blue : Colors.red,
                 ),
               ),
-              const Text('B', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              const Text('B',
+                  style: TextStyle(
+                      color: Colors.red, fontWeight: FontWeight.bold)),
             ],
           ),
           Text(

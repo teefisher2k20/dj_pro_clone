@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 /// Calculates the volume for a deck based on crossfader position
-/// 
+///
 /// [crossfaderPosition]: -1.0 (full Deck A) to 1.0 (full Deck B)
 /// [isDeckA]: true for Deck A, false for Deck B
-/// 
+///
 /// Returns volume level from 0.0 to 1.0
 double calculateDeckVolume(double crossfaderPosition, bool isDeckA) {
   if (isDeckA) {
@@ -20,9 +20,9 @@ class CrossfaderWidget extends StatefulWidget {
   final ValueChanged<double> onChanged;
 
   const CrossfaderWidget({
+    required this.onChanged,
     super.key,
     this.initialPosition = 0.0,
-    required this.onChanged,
   });
 
   @override

@@ -1,0 +1,27 @@
+import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.EventChannel
+
+class AudioEngine(private val context: Context) {
+    // ...existing code...
+
+    fun getWaveformData(deck: String): List<Double> {
+        // TODO: Replace with actual waveform extraction logic
+        return listOf(0.2, 0.5, 0.8, 0.6, 0.3, 0.7, 0.9, 0.4)
+    }
+
+    fun getBeatPositions(deck: String): List<Double> {
+        // TODO: Replace with actual beat detection logic
+        return listOf(0.1, 0.3, 0.5, 0.7, 0.9)
+    }
+
+    // EventChannel for playback position
+    fun setupPlaybackPositionChannel(eventChannel: EventChannel) {
+        eventChannel.setStreamHandler(object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                // TODO: Emit playback position periodically
+                // Example: events?.success(currentPosition)
+            }
+            override fun onCancel(arguments: Any?) {}
+        })
+    }
+}

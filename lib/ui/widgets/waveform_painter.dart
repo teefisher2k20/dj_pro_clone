@@ -37,9 +37,8 @@ class WaveformPainter extends CustomPainter {
 
       // Determine color based on playback position
       final normalizedPosition = i / waveformData.length;
-      paint.color = normalizedPosition <= playbackPosition
-          ? playedColor
-          : unplayedColor;
+      paint.color =
+          normalizedPosition <= playbackPosition ? playedColor : unplayedColor;
 
       // Draw symmetric waveform (top and bottom)
       canvas.drawLine(
@@ -93,8 +92,8 @@ class WaveformWidget extends StatelessWidget {
   final double height;
 
   const WaveformWidget({
-    super.key,
     required this.waveformData,
+    super.key,
     this.playbackPosition = 0.0,
     this.beatPositions = const [],
     this.height = 100,

@@ -13,6 +13,7 @@ class Track {
   final List<double>? waveformData;
   final DateTime? analyzedAt;
   final String? albumArt;
+  final String? videoUrl;
 
   const Track({
     required this.id,
@@ -26,6 +27,7 @@ class Track {
     this.waveformData,
     this.analyzedAt,
     this.albumArt,
+    this.videoUrl,
   });
 
   Track copyWith({
@@ -40,6 +42,7 @@ class Track {
     List<double>? waveformData,
     DateTime? analyzedAt,
     String? albumArt,
+    String? videoUrl,
   }) {
     return Track(
       id: id ?? this.id,
@@ -53,6 +56,7 @@ class Track {
       waveformData: waveformData ?? this.waveformData,
       analyzedAt: analyzedAt ?? this.analyzedAt,
       albumArt: albumArt ?? this.albumArt,
+      videoUrl: videoUrl ?? this.videoUrl,
     );
   }
 
@@ -68,6 +72,7 @@ class Track {
       'cuePoints': cuePoints.map((cp) => cp.toJson()).toList(),
       'analyzedAt': analyzedAt?.toIso8601String(),
       'albumArt': albumArt,
+      'videoUrl': videoUrl,
     };
   }
 
@@ -88,6 +93,7 @@ class Track {
           ? DateTime.parse(json['analyzedAt'] as String)
           : null,
       albumArt: json['albumArt'] as String?,
+      videoUrl: json['videoUrl'] as String?,
     );
   }
 }

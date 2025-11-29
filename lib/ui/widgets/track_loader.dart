@@ -133,7 +133,7 @@ class TrackLoader extends StatelessWidget {
 
   Future<void> _pickLocalFile(BuildContext context) async {
     Navigator.pop(context); // Close sheet
-    
+
     try {
       final FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.audio,
@@ -155,15 +155,17 @@ class TrackLoader extends StatelessWidget {
 
   void _mockServiceLoad(BuildContext context, String serviceName) {
     Navigator.pop(context); // Close sheet
-    
+
     // Simulate loading delay
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Connecting to $serviceName...')),
     );
-    
+
     Future.delayed(const Duration(seconds: 1), () {
       if (context.mounted) {
-        onTrackLoaded('Top Hit from $serviceName', serviceName);
+        // Provide a dummy audio URL for streaming services
+        onTrackLoaded('Top Hit from $serviceName',
+            'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
       }
     });
   }

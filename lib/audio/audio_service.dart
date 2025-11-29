@@ -3,8 +3,41 @@ import 'package:flutter/services.dart';
 /// Core audio service for managing dual-deck audio playback
 /// and communication with native platform code.
 class AudioService {
+  /// Get waveform data for a deck
+  Future<List<double>> getWaveformData({required bool isDeckA}) async {
+    try {
+      final result = await _channel.invokeMethod('getWaveformData', {
+        'deck': isDeckA ? 'A' : 'B',
+      });
+      return (result as List<dynamic>).map((e) => e as double).toList();
+    } on PlatformException catch (e) {
+      throw AudioException('Failed to get waveform data: ${e.message}');
+    }
+  }
+
+  /// Get beat positions for a deck
+  Future<List<double>> getBeatPositions({required bool isDeckA}) async {
+    try {
+      final result = await _channel.invokeMethod('getBeatPositions', {
+        'deck': isDeckA ? 'A' : 'B',
+      });
+      return (result as List<dynamic>).map((e) => e as double).toList();
+    } on PlatformException catch (e) {
+      throw AudioException('Failed to get beat positions: ${e.message}');
+    }
+  }
+
+  /// Stream playback position for a deck
+  Stream<double> playbackPositionStream({required bool isDeckA}) async* {
+    // This is a stub. Implement using EventChannel for real-time updates.
+    // Example:
+    // final eventChannel = EventChannel('com.djpro.audio/playbackPosition');
+    // yield* eventChannel.receiveBroadcastStream({'deck': isDeckA ? 'A' : 'B'}).map((e) => e as double);
+    yield 0.0; // Replace with actual implementation
+  }
+
   static const _channel = MethodChannel('com.djpro.audio/playback');
-  
+
   // Singleton pattern
   static final AudioService _instance = AudioService._internal();
   factory AudioService() => _instance;
