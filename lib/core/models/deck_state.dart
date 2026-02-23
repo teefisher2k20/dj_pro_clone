@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/models/track.dart';
 import '../audio/effects_processor.dart'; // For AudioEffectType
+import '../services/key_matching_service.dart'; // For CamelotKey
 
 enum DeckSide {
   A,
@@ -38,12 +39,14 @@ class DeckState {
   final double tempo;
   final bool isKeyLock;
   final double? detectedBPM;
+  final CamelotKey? detectedKey;
 
   // EQ & Gain
   final double highEq; // 0.0 to 1.0, 0.5 is flat
   final double midEq; // 0.0 to 1.0, 0.5 is flat
   final double lowEq; // 0.0 to 1.0, 0.5 is flat
   final double gain; // 0.0 to 1.0, 0.5 is 0dB (nominal)
+  final bool isSyncActive;
 
   // FX Controls
   final AudioEffectType currentEffect;
@@ -83,10 +86,16 @@ class DeckState {
   final Duration? pitchPlayCuePoint;
   final List<double>? pitchPlayNotes; // Pitch multipliers for 8 pads
 
-  // Phase 2 - Advanced FX Pad
   final bool isFxPadActive;
   final double fxX; // 0.0 to 1.0
   final double fxY; // 0.0 to 1.0
+
+  // Main Cue Point
+  final Duration? cuePoint;
+
+  // Phase 2 - Scratch Banks
+  final bool isScratchBankActive;
+  final List<ScratchBank> scratchBanks;
 
   DeckState({
     this.track,
@@ -98,14 +107,17 @@ class DeckState {
     this.tempo = 1.0,
     this.isKeyLock = false,
     this.detectedBPM,
+    this.detectedKey,
     this.highEq = 0.5,
     this.midEq = 0.5,
     this.lowEq = 0.5,
     this.gain = 0.5,
+    this.isSyncActive = false,
     this.currentEffect = AudioEffectType.none,
     this.fxWetDry = 0.0,
     this.isFxActive = false,
     this.hotCues = const [null, null, null, null, null, null, null, null],
+    this.cuePoint,
     this.isLoopActive = false,
     this.loopLength = 4.0,
     this.loopInPoint,
@@ -127,6 +139,8 @@ class DeckState {
     this.isFxPadActive = false,
     this.fxX = 0.5,
     this.fxY = 0.5,
+    this.isScratchBankActive = false,
+    this.scratchBanks = const [],
   });
 
   DeckState copyWith({
@@ -139,10 +153,12 @@ class DeckState {
     double? tempo,
     bool? isKeyLock,
     double? detectedBPM,
+    CamelotKey? detectedKey,
     double? highEq,
     double? midEq,
     double? lowEq,
     double? gain,
+    bool? isSyncActive,
     AudioEffectType? currentEffect,
     double? fxWetDry,
     bool? isFxActive,
@@ -168,6 +184,9 @@ class DeckState {
     bool? isFxPadActive,
     double? fxX,
     double? fxY,
+    Duration? cuePoint,
+    bool? isScratchBankActive,
+    List<ScratchBank>? scratchBanks,
   }) {
     return DeckState(
       track: track ?? this.track,
@@ -179,14 +198,17 @@ class DeckState {
       tempo: tempo ?? this.tempo,
       isKeyLock: isKeyLock ?? this.isKeyLock,
       detectedBPM: detectedBPM ?? (track != null ? null : this.detectedBPM),
+      detectedKey: detectedKey ?? (track != null ? null : this.detectedKey),
       highEq: highEq ?? this.highEq,
       midEq: midEq ?? this.midEq,
       lowEq: lowEq ?? this.lowEq,
       gain: gain ?? this.gain,
+      isSyncActive: isSyncActive ?? this.isSyncActive,
       currentEffect: currentEffect ?? this.currentEffect,
       fxWetDry: fxWetDry ?? this.fxWetDry,
       isFxActive: isFxActive ?? this.isFxActive,
       hotCues: hotCues ?? this.hotCues,
+      cuePoint: cuePoint ?? this.cuePoint,
       isLoopActive: isLoopActive ?? this.isLoopActive,
       loopLength: loopLength ?? this.loopLength,
       loopInPoint: loopInPoint ?? this.loopInPoint,
@@ -212,8 +234,22 @@ class DeckState {
       isFxPadActive: isFxPadActive ?? this.isFxPadActive,
       fxX: fxX ?? this.fxX,
       fxY: fxY ?? this.fxY,
+      isScratchBankActive: isScratchBankActive ?? this.isScratchBankActive,
+      scratchBanks: scratchBanks ?? this.scratchBanks,
     );
   }
 }
 
 enum StemType { vocals, drums, harmonics, other }
+
+class ScratchBank {
+  final String label;
+  final String filePath;
+  final Color color;
+
+  const ScratchBank({
+    required this.label,
+    required this.filePath,
+    this.color = Colors.purpleAccent,
+  });
+}

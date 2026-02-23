@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/deck_state.dart';
 
-enum PadMode { hotCue, loop, slicer, sampler }
+enum PadMode { hotCue, loop, slicer, sampler, scratchBank }
 
 class PerformancePadsWidget extends StatefulWidget {
   final DeckState state;
@@ -15,6 +15,10 @@ class PerformancePadsWidget extends StatefulWidget {
   // Slicer
   final VoidCallback onToggleSlicer;
   final ValueChanged<int> onJumpToSlice;
+  // Scratch Bank
+  final VoidCallback onToggleScratchBank;
+  final ValueChanged<int> onTriggerScratchBank;
+  final ValueChanged<int> onReleaseScratchBank;
   // Styling
   final Color color;
 
@@ -28,6 +32,9 @@ class PerformancePadsWidget extends StatefulWidget {
     required this.onAutoLoop,
     required this.onToggleSlicer,
     required this.onJumpToSlice,
+    required this.onToggleScratchBank,
+    required this.onTriggerScratchBank,
+    required this.onReleaseScratchBank,
     required this.color,
   });
 
@@ -51,6 +58,7 @@ class _PerformancePadsWidgetState extends State<PerformancePadsWidget> {
             _buildTab(PadMode.loop, 'LOOP'),
             _buildTab(PadMode.slicer, 'SLICER'),
             _buildTab(PadMode.sampler, 'SAMPLE'),
+            _buildTab(PadMode.scratchBank, 'SCRATCH'),
           ],
         ),
         const SizedBox(height: 8),
@@ -80,6 +88,17 @@ class _PerformancePadsWidgetState extends State<PerformancePadsWidget> {
         } else {
           if (widget.state.isSlicerActive) {
             widget.onToggleSlicer(); // Deactivate if leaving slicer tab
+          }
+        }
+
+        // Handle Scratch Bank logic if needed
+        if (mode == PadMode.scratchBank) {
+          if (!widget.state.isScratchBankActive) {
+            widget.onToggleScratchBank();
+          }
+        } else {
+          if (widget.state.isScratchBankActive) {
+            widget.onToggleScratchBank();
           }
         }
       },
@@ -133,6 +152,8 @@ class _PerformancePadsWidgetState extends State<PerformancePadsWidget> {
         return _buildSlicerPad(index);
       case PadMode.sampler:
         return _buildSamplerPad(index);
+      case PadMode.scratchBank:
+        return _buildScratchBankPad(index);
     }
   }
 
@@ -274,6 +295,39 @@ class _PerformancePadsWidgetState extends State<PerformancePadsWidget> {
       child: Text(
         'S${index + 1}',
         style: const TextStyle(color: Colors.white30),
+      ),
+    );
+  }
+
+  Widget _buildScratchBankPad(int index) {
+    // Only 8 banks?
+    final banks = widget.state.scratchBanks;
+    final bank = index < banks.length ? banks[index] : null;
+
+    return GestureDetector(
+      onTapDown: (_) => widget.onTriggerScratchBank(index),
+      onTapUp: (_) => widget.onReleaseScratchBank(index),
+      onTapCancel: () => widget.onReleaseScratchBank(index),
+      child: Container(
+        decoration: BoxDecoration(
+          color: bank != null
+              ? bank.color.withOpacity(0.3)
+              : Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: bank != null ? bank.color : Colors.grey.withOpacity(0.3),
+          ),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          bank?.label ?? 'Bank ${index + 1}',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

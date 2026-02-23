@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'key_matching_service.dart';
 
 class AudioAnalysisService {
   // Simulate Cloud Function for BPM detection
@@ -42,5 +43,18 @@ class AudioAnalysisService {
     }
 
     return bpmMap;
+  }
+
+  /// Detects the musical key of a track (simulated).
+  ///
+  /// In a real app this would call a native lib (e.g. Essentia, aubio)
+  /// or a cloud function that runs chromagram analysis.
+  Future<CamelotKey> detectKey(String filePath) async {
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    // Use the file hash to deterministically pick a key for the demo.
+    final hash = filePath.hashCode.abs();
+    final index = hash % KeyMatchingService.allKeys.length;
+    return KeyMatchingService.allKeys[index];
   }
 }

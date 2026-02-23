@@ -8,6 +8,7 @@ import '../providers/library_provider.dart';
 import '../widgets/track_list_item.dart';
 import '../widgets/search_bar_widget.dart';
 import '../widgets/empty_library_widget.dart';
+import 'playlist_sync_screen.dart';
 
 class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key});
@@ -30,6 +31,18 @@ class LibraryScreen extends StatelessWidget {
             foregroundColor: Colors.white,
             elevation: 0,
             actions: [
+              IconButton(
+                icon: const Icon(Icons.sync_alt),
+                tooltip: 'Streaming Playlist Sync',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PlaylistSyncScreen(),
+                    ),
+                  );
+                },
+              ),
               // Sort menu
               PopupMenuButton<SortOption>(
                 icon: const Icon(Icons.sort),
@@ -87,24 +100,7 @@ class LibraryScreen extends StatelessWidget {
             ],
           ),
           floatingActionButton: FloatingActionButton.extended(
-            onPressed: () async {
-              try {
-                await libraryProvider.importTracks();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Tracks imported successfully'),
-                    ),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Failed to import tracks')),
-                  );
-                }
-              }
-            },
+            onPressed: () => _showImportOptions(context),
             label: const Text(
               'Import Tracks',
               style: TextStyle(color: Colors.black),
@@ -235,6 +231,157 @@ class LibraryScreen extends StatelessWidget {
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  void _showImportOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1F3A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(left: 16, bottom: 16),
+                child: Text(
+                  'Import Tracks',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.folder_open,
+                  color: Color(0xFF00D9FF),
+                ),
+                title: const Text(
+                  'Local Files',
+                  style: TextStyle(color: Colors.white),
+                ),
+                subtitle: const Text(
+                  'Import from device storage',
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+                onTap: () async {
+                  Navigator.pop(context); // Close sheet
+                  final libraryProvider = context.read<LibraryProvider>();
+                  try {
+                    await libraryProvider.importTracks();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Tracks imported successfully'),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Failed to import tracks'),
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+              const Divider(color: Colors.white24),
+              const Padding(
+                padding: EdgeInsets.only(left: 16, top: 8, bottom: 8),
+                child: Text(
+                  'Streaming Services',
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+              _buildStreamingImportOption(
+                context,
+                'YouTube Music',
+                Icons.play_circle_outline,
+                Colors.redAccent,
+                'ytmusic',
+              ),
+              _buildStreamingImportOption(
+                context,
+                'Spotify',
+                Icons.circle,
+                Colors.green,
+                'spotify',
+              ),
+              _buildStreamingImportOption(
+                context,
+                'Apple Music',
+                Icons.music_note,
+                Colors.pinkAccent,
+                'apple',
+              ),
+              _buildStreamingImportOption(
+                context,
+                'SoundCloud',
+                Icons.cloud,
+                Colors.orange,
+                'soundcloud',
+              ),
+              _buildStreamingImportOption(
+                context,
+                'Tidal',
+                Icons.diamond,
+                Colors.white, // Ensure visibility on dark bg
+                'tidal',
+              ),
+              _buildStreamingImportOption(
+                context,
+                'Amazon Music',
+                Icons.shopping_cart,
+                Colors.blueGrey,
+                'amazon',
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildStreamingImportOption(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color color,
+    String platformId,
+  ) {
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(title, style: const TextStyle(color: Colors.white)),
+      trailing: const Icon(
+        Icons.arrow_forward_ios,
+        color: Colors.white24,
+        size: 14,
+      ),
+      onTap: () {
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                PlaylistSyncScreen(initialSourcePlatform: platformId),
+          ),
         );
       },
     );

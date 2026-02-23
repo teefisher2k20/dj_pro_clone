@@ -3,14 +3,12 @@ import '../../../core/models/deck_state.dart';
 import '../../../core/services/waveform_service.dart';
 import 'waveform_widget.dart';
 import 'tempo_control_widget.dart';
-import 'eq_widget.dart';
-import 'gain_control_widget.dart';
 import '../../../core/audio/effects_processor.dart';
-import 'fx_panel_widget.dart';
-
 import 'loop_controls_widget.dart';
-import 'stem_controls_widget.dart';
 import 'performance_pads_widget.dart';
+import 'advanced_fx_pad_widget.dart';
+import 'jog_wheel_widget.dart';
+import '../../../core/services/key_matching_service.dart';
 
 class DeckWidget extends StatefulWidget {
   final DeckSide side;
@@ -24,10 +22,6 @@ class DeckWidget extends StatefulWidget {
   final ValueChanged<bool> onKeyLockChanged;
   final VoidCallback onTapTempo;
   final VoidCallback onSync;
-  final ValueChanged<double> onHighEqChanged;
-  final ValueChanged<double> onMidEqChanged;
-  final ValueChanged<double> onLowEqChanged;
-  final ValueChanged<double> onGainChanged;
   final ValueChanged<AudioEffectType> onEffectChanged;
   final ValueChanged<double> onFxWetDryChanged;
   final ValueChanged<bool> onFxActiveChanged;
@@ -38,7 +32,6 @@ class DeckWidget extends StatefulWidget {
   final ValueChanged<double> onLoopLengthChanged;
   final VoidCallback onLoopIn;
   final VoidCallback onLoopOut;
-  final ValueChanged<double> onVolumeChanged;
 
   // Stem Callbacks
   final VoidCallback onToggleStems;
@@ -59,11 +52,23 @@ class DeckWidget extends StatefulWidget {
   // Phase 2 - Slicer Mode
   final VoidCallback onToggleSlicer;
   final ValueChanged<int> onJumpToSlice;
+  final ValueChanged<Offset> onFxXYChanged;
 
   // Phase 2 - Saved Loops
   final VoidCallback onSaveLoop;
   final ValueChanged<String> onDeleteLoop;
   final ValueChanged<SavedLoop> onActivateSavedLoop;
+
+  // Phase 2 - Scratch Banks
+  final VoidCallback onToggleScratchBank;
+  final ValueChanged<int> onTriggerScratchBank;
+  final ValueChanged<int> onReleaseScratchBank;
+
+  // Jog Wheel Callbacks
+  final VoidCallback? onScratchStart;
+  final VoidCallback? onScratchEnd;
+
+  final VoidCallback onTriggerCue; // New
 
   const DeckWidget({
     super.key,
@@ -78,10 +83,6 @@ class DeckWidget extends StatefulWidget {
     required this.onKeyLockChanged,
     required this.onTapTempo,
     required this.onSync,
-    required this.onHighEqChanged,
-    required this.onMidEqChanged,
-    required this.onLowEqChanged,
-    required this.onGainChanged,
     required this.onEffectChanged,
     required this.onFxWetDryChanged,
     required this.onFxActiveChanged,
@@ -92,7 +93,6 @@ class DeckWidget extends StatefulWidget {
     required this.onLoopLengthChanged,
     required this.onLoopIn,
     required this.onLoopOut,
-    required this.onVolumeChanged,
     required this.onToggleStems,
     required this.onVocalsVolumeChanged,
     required this.onDrumsVolumeChanged,
@@ -106,6 +106,13 @@ class DeckWidget extends StatefulWidget {
     required this.onActivateSavedLoop,
     required this.onToggleSlicer,
     required this.onJumpToSlice,
+    required this.onFxXYChanged,
+    required this.onToggleScratchBank,
+    required this.onTriggerScratchBank,
+    required this.onReleaseScratchBank,
+    required this.onTriggerCue,
+    this.onScratchStart,
+    this.onScratchEnd,
   });
 
   @override
@@ -160,7 +167,7 @@ class _DeckWidgetState extends State<DeckWidget> {
         });
       }
     } catch (e) {
-      print('Failed to load waveform: $e');
+      debugPrint('Failed to load waveform: $e');
       if (mounted) {
         setState(() {
           _isLoadingWaveform = false;
@@ -179,345 +186,366 @@ class _DeckWidgetState extends State<DeckWidget> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: widget.side.color, width: 2),
-        borderRadius: BorderRadius.circular(16),
-        color: const Color(0xFF1A1F3A),
+        color: const Color(0xFF14161F),
+        border: Border.all(color: widget.side.color.withOpacity(0.5), width: 1),
+        borderRadius: BorderRadius.circular(4),
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(8),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with deck label
-          Row(
-            children: [
-              Icon(Icons.album, color: widget.side.color),
-              const SizedBox(width: 8),
-              Text(
-                'DECK ${widget.side.label}',
-                style: TextStyle(
-                  color: widget.side.color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
+          // 1. Top Screen Area
+          Expanded(
+            flex: 3,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF000000),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.white12),
               ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Waveform
-          if (widget.state.track != null) _buildWaveform(),
-
-          const SizedBox(height: 16),
-
-          // Track info or load button
-          if (widget.state.track == null)
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: widget.onLoadTrack,
-                icon: const Icon(Icons.music_note),
-                label: const Text('Load Track'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: widget.side.color,
-                  foregroundColor: Colors.black, // Visible text
-                ),
-              ),
-            )
-          else
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.state.track!.title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  widget.state.track!.artist,
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-
-          const SizedBox(height: 16),
-
-          // Transport controls
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              IconButton(
-                icon: Icon(
-                  widget.state.isPlaying
-                      ? Icons.pause_circle_filled
-                      : Icons.play_circle_filled,
-                ),
-                iconSize: 64,
-                color: widget.side.color,
-                onPressed: widget.state.track == null
-                    ? null
-                    : (widget.state.isPlaying ? widget.onPause : widget.onPlay),
-              ),
-              IconButton(
-                icon: const Icon(Icons.stop),
-                iconSize: 36,
-                color: Colors.white70,
-                onPressed: widget.state.track == null ? null : widget.onStop,
-              ),
-              // Beat Jump Controls
-              Row(
-                mainAxisSize: MainAxisSize.min,
+              child: Column(
                 children: [
-                  _buildBeatJumpIcon(-8, Icons.fast_rewind),
-                  _buildBeatJumpIcon(-4, Icons.keyboard_arrow_left),
-                  const SizedBox(width: 4),
-                  _buildBeatJumpIcon(4, Icons.keyboard_arrow_right),
-                  _buildBeatJumpIcon(8, Icons.fast_forward),
-                ],
-              ),
-              IconButton(
-                icon: const Icon(Icons.eject),
-                iconSize: 24,
-                color: Colors.white30,
-                onPressed: widget.onLoadTrack,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Position display
-          Center(
-            child: Text(
-              '${_formatDuration(widget.state.position)} / ${_formatDuration(widget.state.duration)}',
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.white70,
-                fontFamily: 'monospace',
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Tempo Control
-          if (widget.state.track != null)
-            TempoControlWidget(
-              currentTempo: widget.state.tempo,
-              isKeyLock: widget.state.isKeyLock,
-              originalBPM: widget.state.detectedBPM ?? 120.0,
-              onTempoChanged: widget.onTempoChanged,
-              onKeyLockChanged: widget.onKeyLockChanged,
-              onTapTempo: widget.onTapTempo,
-              onSync: widget.onSync,
-            ),
-
-          const SizedBox(height: 8),
-
-          // Loop Controls & Slip Mode & Quantize
-          Row(
-            children: [
-              Expanded(
-                child: LoopControlsWidget(
-                  isLoopActive: widget.state.isLoopActive,
-                  loopLength: widget.state.loopLength,
-                  onLoopLengthChanged: widget.onLoopLengthChanged,
-                  onToggleLoop: widget.onToggleLoop,
-                  onLoopIn: widget.onLoopIn,
-                  onLoopOut: widget.onLoopOut,
-                  isQuantizeActive: widget.state.isQuantizeActive,
-                  onToggleQuantize: widget.onToggleQuantize,
-                  color: widget.side.color,
-                  savedLoops: widget.state.savedLoops,
-                  onSaveLoop: widget.onSaveLoop,
-                  onDeleteLoop: widget.onDeleteLoop,
-                  onActivateSavedLoop: widget.onActivateSavedLoop,
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Slip Mode Toggle
-              Column(
-                children: [
-                  const Text(
-                    'SLIP',
-                    style: TextStyle(color: Colors.grey, fontSize: 10),
+                  // Track Info Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        color: widget.side.color,
+                        child: Text(
+                          widget.side.label,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: widget.state.track == null
+                            ? const Text(
+                                'No Track Loaded',
+                                style: TextStyle(color: Colors.white38),
+                              )
+                            : Text(
+                                '${widget.state.track!.artist} - ${widget.state.track!.title}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                      ),
+                      // Time Info
+                      Text(
+                        '${_formatDuration(widget.state.position)} / ${_formatDuration(widget.state.duration)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'monospace',
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
                   ),
-                  Switch(
-                    value: widget.state.isSlipActive,
-                    onChanged: (_) => widget.onToggleSlipMode(),
-                    activeThumbColor: Colors.redAccent,
-                    activeTrackColor: Colors.redAccent.withOpacity(0.3),
+                  const SizedBox(height: 8),
+
+                  // Waveform
+                  Expanded(child: _buildWaveform()),
+
+                  const SizedBox(height: 4),
+
+                  // Phase/Sync Info Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'BPM: ${widget.state.tempo.toStringAsFixed(1)}',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 10,
+                        ),
+                      ),
+                      // Detected Key Badge
+                      if (widget.state.detectedKey != null)
+                        _buildKeyBadge(widget.state.detectedKey!)
+                      else if (widget.state.track != null)
+                        const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 8,
+                              height: 8,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 1.5,
+                                color: Colors.white38,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Detecting key...',
+                              style: TextStyle(
+                                color: Colors.white38,
+                                fontSize: 9,
+                              ),
+                            ),
+                          ],
+                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (widget.state.isSyncActive)
+                            const _StatusBadge(
+                              label: 'SYNC',
+                              color: Colors.blueAccent,
+                            ),
+                          if (widget.state.isKeyLock) ...[
+                            const SizedBox(width: 4),
+                            const _StatusBadge(
+                              label: 'KEYLOCK',
+                              color: Colors.redAccent,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
 
           const SizedBox(height: 8),
 
-          if (widget.state.track != null) ...[
-            const SizedBox(height: 8),
-            const SizedBox(height: 8),
-            // Gain & Neural Mix Toggle
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // 2. Main Deck Controls
+          Expanded(
+            flex: 5,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                GainControlWidget(
-                  gain: widget.state.gain,
-                  onChanged: widget.onGainChanged,
-                  color: widget.side.color,
-                ),
-                TextButton.icon(
-                  onPressed: widget.onToggleStems,
-                  icon: Icon(
-                    Icons.layers,
-                    size: 16,
-                    color: widget.state.isStemsActive
-                        ? widget.side.color
-                        : Colors.grey,
-                  ),
-                  label: Text(
-                    'NEURAL MIX',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: widget.state.isStemsActive
-                          ? widget.side.color
-                          : Colors.grey,
+                // Left: Loops & Pads
+                Expanded(
+                  flex: 3,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        AdvancedFXPadWidget(side: widget.side),
+                        const SizedBox(height: 8),
+                        LoopControlsWidget(
+                          isLoopActive: widget.state.isLoopActive,
+                          loopLength: widget.state.loopLength,
+                          onLoopLengthChanged: widget.onLoopLengthChanged,
+                          onToggleLoop: widget.onToggleLoop,
+                          onLoopIn: widget.onLoopIn,
+                          onLoopOut: widget.onLoopOut,
+                          isQuantizeActive: widget.state.isQuantizeActive,
+                          onToggleQuantize: widget.onToggleQuantize,
+                          color: widget.side.color,
+                          savedLoops: widget.state.savedLoops,
+                          onSaveLoop: widget.onSaveLoop,
+                          onDeleteLoop: widget.onDeleteLoop,
+                          onActivateSavedLoop: widget.onActivateSavedLoop,
+                        ),
+                        const SizedBox(height: 8),
+                        PerformancePadsWidget(
+                          state: widget.state,
+                          side: widget.side,
+                          color: widget.side.color,
+                          onSetCue: widget.onSetCue,
+                          onJumpToCue: widget.onJumpToCue,
+                          onDeleteCue: widget.onDeleteCue,
+                          onAutoLoop: widget.onLoopLengthChanged,
+                          onToggleSlicer: widget.onToggleSlicer,
+                          onJumpToSlice: widget.onJumpToSlice,
+                          onToggleScratchBank: widget.onToggleScratchBank,
+                          onTriggerScratchBank: widget.onTriggerScratchBank,
+                          onReleaseScratchBank: widget.onReleaseScratchBank,
+                        ),
+                      ],
                     ),
                   ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: const Size(0, 32),
+                ),
+
+                const SizedBox(width: 8),
+
+                // Center: Jog Wheel
+                Expanded(
+                  flex: 5,
+                  child: Center(
+                    child: JogWheelWidget(
+                      state: widget.state,
+                      side: widget.side,
+                      onSeek: (pos) => widget.onSeek?.call(pos),
+                      onScratchStart: () {
+                        // We need access to DeckProvider to call pause/startScratch.
+                        // Ideally DeckWidget should take a callback for onScratchStart/End
+                        // or we check if we have access to the provider.
+                        // But DeckWidget receives callbacks, not the provider directly.
+
+                        // We need to add onScratchStart/End to DeckWidget parameters?
+                        // Or just assume `onSeek` handles it?
+                        // No, the scratch logic (pause/resume) is now in DeckProvider.startScratch.
+                        // We should expose this via new callbacks in DeckWidget.
+
+                        // Since I can't easily change the DeckWidget constructor signature in this single Move
+                        // without updating the parent (likely DJDeckScreen), I'm stuck.
+                        // Wait, I can update DeckWidget constructor here, but I must also update where it's used.
+
+                        // Let's assume for now I will add the callbacks to DeckWidget.
+                        widget.onScratchStart?.call();
+                      },
+                      onScratchEnd: () {
+                        widget.onScratchEnd?.call();
+                      },
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // Right: Tempo Slider
+                SizedBox(
+                  width: 60,
+                  child: TempoControlWidget(
+                    currentTempo: widget.state.tempo,
+                    isKeyLock: widget.state.isKeyLock,
+                    originalBPM: widget.state.detectedBPM ?? 120.0,
+                    onTempoChanged: widget.onTempoChanged,
+                    onKeyLockChanged: widget.onKeyLockChanged,
+                    onTapTempo: widget.onTapTempo,
+                    onSync: widget.onSync,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-
-            // EQ or Stems
-            if (widget.state.isStemsActive)
-              StemControlsWidget(
-                vocals: widget.state.vocalsVolume,
-                drums: widget.state.drumsVolume,
-                harmonics: widget.state.harmonicsVolume,
-                other: widget.state.otherVolume,
-                onVocalsChanged: widget.onVocalsVolumeChanged,
-                onDrumsChanged: widget.onDrumsVolumeChanged,
-                onHarmonicsChanged: widget.onHarmonicsVolumeChanged,
-                onOtherChanged: widget.onOtherVolumeChanged,
-                color: widget.side.color,
-              )
-            else
-              EQWidget(
-                high: widget.state.highEq,
-                mid: widget.state.midEq,
-                low: widget.state.lowEq,
-                onHighChanged: widget.onHighEqChanged,
-                onMidChanged: widget.onMidEqChanged,
-                onLowChanged: widget.onLowEqChanged,
-                color: widget.side.color,
-              ),
-          ],
-
-          const SizedBox(height: 8),
-
-          const SizedBox(height: 8),
-
-          // FX Panel
-          FXPanelWidget(
-            currentEffect: widget.state.currentEffect,
-            wetDry: widget.state.fxWetDry,
-            isActive: widget.state.isFxActive,
-            onEffectChanged: widget.onEffectChanged,
-            onWetDryChanged: widget.onFxWetDryChanged,
-            onActiveChanged: widget.onFxActiveChanged,
-            color: widget.side.color,
           ),
 
           const SizedBox(height: 8),
 
-          const SizedBox(height: 8),
-
-          // Performance Pads (Hot Cue, Loop, Slicer, Sampler)
-          PerformancePadsWidget(
-            state: widget.state,
-            side: widget.side,
-            color: widget.side.color,
-            onSetCue: widget.onSetCue,
-            onJumpToCue: widget.onJumpToCue,
-            onDeleteCue: widget.onDeleteCue,
-            onAutoLoop: widget.onLoopLengthChanged,
-            onToggleSlicer: widget.onToggleSlicer,
-            onJumpToSlice: widget.onJumpToSlice,
-          ),
-
-          const SizedBox(height: 8),
-
-          const SizedBox(height: 8),
-
-          /* Moved Loop Controls up */
-          const SizedBox(height: 8),
-
-          // Volume control
-          Row(
-            children: [
-              const Icon(Icons.volume_up, size: 20, color: Colors.white54),
-              Expanded(
-                child: Slider(
-                  value: widget.state.volume,
-                  onChanged: (value) {
-                    widget.onVolumeChanged(value);
-                  },
-                  activeColor: widget.side.color,
-                  inactiveColor: Colors.white12,
+          // 3. Bottom Transport
+          SizedBox(
+            height: 80,
+            child: Row(
+              children: [
+                // CUE Button
+                _buildTransportButton(
+                  label: 'CUE',
+                  color: Colors.orange,
+                  onPressed: widget.onTriggerCue,
+                  isActive: widget.state.cuePoint != null,
                 ),
-              ),
-            ],
+
+                const SizedBox(width: 16),
+                // PLAY/PAUSE Button
+                _buildTransportButton(
+                  label: '',
+                  icon: Icons.play_arrow,
+                  color: Colors.green,
+                  onPressed: widget.state.track == null
+                      ? null
+                      : (widget.state.isPlaying
+                            ? widget.onPause
+                            : widget.onPlay),
+                  isActive: widget.state.isPlaying,
+                ),
+
+                const Spacer(),
+
+                // Load / Eject
+                IconButton(
+                  icon: const Icon(Icons.eject),
+                  color: Colors.white54,
+                  onPressed: widget.onLoadTrack,
+                  tooltip: 'Load Track',
+                ),
+
+                // Beat Jump (Quick)
+                _buildBeatJumpIcon(-4, Icons.keyboard_arrow_left),
+                _buildBeatJumpIcon(4, Icons.keyboard_arrow_right),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildWaveform() {
-    if (_isLoadingWaveform) {
-      return Container(
-        height: 100,
-        alignment: Alignment.center,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation(widget.side.color),
+  Widget _buildTransportButton({
+    required String label,
+    required Color color,
+    required VoidCallback? onPressed,
+    IconData? icon,
+    bool isActive = false,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 70,
+        height: 70,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: const Color(0xFF252525),
+          border: Border.all(
+            color: isActive ? color : Colors.white24,
+            width: 3,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black45,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Analyzing waveform...',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
+            if (isActive)
+              BoxShadow(color: color.withOpacity(0.5), blurRadius: 10),
           ],
         ),
-      );
+        alignment: Alignment.center,
+        child: icon != null
+            ? Icon(
+                icon,
+                color: isActive ? Colors.white : Colors.white54,
+                size: 32,
+              )
+            : Text(
+                label,
+                style: TextStyle(
+                  color: isActive ? color.withOpacity(0.9) : Colors.white54,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildWaveform() {
+    if (_isLoadingWaveform) {
+      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
     }
 
     if (_waveformData == null) {
-      return Container(
-        height: 100,
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1F3A),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        alignment: Alignment.center,
-        child: const Text(
-          'No waveform data',
-          style: TextStyle(color: Colors.grey),
+      return GestureDetector(
+        onTap: widget.onLoadTrack,
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white10,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          alignment: Alignment.center,
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add, color: Colors.white38),
+              SizedBox(height: 4),
+              Text(
+                'Load Track',
+                style: TextStyle(color: Colors.white38, fontSize: 10),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -527,13 +555,12 @@ class _DeckWidgetState extends State<DeckWidget> {
       currentPosition: widget.state.position,
       totalDuration: widget.state.duration,
       playedColor: widget.side.color,
-      waveColor: Colors.grey.withOpacity(0.5),
+      waveColor: Colors.grey.withOpacity(0.3),
       playheadColor: Colors.white,
-      height: 100,
+      height: 60,
       onSeek: (position) {
         widget.onSeek?.call(position);
       },
-      // Pass ghost position if slip is active
       ghostPosition: widget.state.isSlipActive
           ? widget.state.slipGhostPosition
           : null,
@@ -560,6 +587,71 @@ class _DeckWidgetState extends State<DeckWidget> {
           style: const TextStyle(fontSize: 8, color: Colors.grey),
         ),
       ],
+    );
+  }
+
+  Widget _buildKeyBadge(CamelotKey key) {
+    // Pick color based on major/minor
+    final Color keyColor = key.isMajor
+        ? const Color(0xFFFFD700) // Gold for major
+        : const Color(0xFF9F7FFF); // Purple for minor
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: keyColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: keyColor.withOpacity(0.6), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.music_note, size: 8, color: keyColor),
+          const SizedBox(width: 3),
+          Text(
+            key.camelotCode,
+            style: TextStyle(
+              color: keyColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 10,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            key.shortName,
+            style: TextStyle(color: keyColor.withOpacity(0.7), fontSize: 9),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _StatusBadge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: color.withOpacity(0.5), width: 1),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.bold,
+          fontSize: 9,
+          letterSpacing: 0.5,
+        ),
+      ),
     );
   }
 }

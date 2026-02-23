@@ -1,0 +1,29 @@
+[36mUse of `dartPluginClass:[39m
+[36mnone`[39m
+[36m(flutter_midi_command_linux)[39m
+[36mis deprecated, and will be[39m
+[36mremoved in the next stable[39m
+[36mversion. See[39m
+[36mhttps://github.com/flutter/fl[39m
+[36mutter/issues/57497 for[39m
+[36mdetails.[39m
+[36mUse of `dartPluginClass:[39m
+[36mnone`[39m
+[36m(flutter_midi_command_linux)[39m
+[36mis deprecated, and will be[39m
+[36mremoved in the next stable[39m
+[36mversion. See[39m
+[36mhttps://github.com/flutter/fl[39m
+[36mutter/issues/57497 for[39m
+[36mdetails.[39m
+[36mUse of `dartPluginClass:[39m
+[36mnone`[39m
+[36m(flutter_midi_command_linux)[39m
+[36mis deprecated, and will be[39m
+[36mremoved in the next stable[39m
+[36mversion. See[39m
+[36mhttps://github.com/flutter/fl[39m
+[36mutter/issues/57497 for[39m
+[36mdetails.[39m
+[31m114 issues found. (ran in[39m
+[31m3.7s)[39m

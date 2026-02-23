@@ -7,7 +7,9 @@ import '../widgets/deck_widget.dart';
 import '../widgets/mixer_widget.dart';
 import '../widgets/sampler_panel_widget.dart';
 import '../widgets/video_mixing_layer.dart';
+import '../widgets/camelot_wheel_widget.dart';
 import '../../library/screens/library_screen.dart';
+import '../widgets/stem_controls_widget.dart';
 
 class DjDeckScreen extends StatefulWidget {
   const DjDeckScreen({super.key});
@@ -18,6 +20,7 @@ class DjDeckScreen extends StatefulWidget {
 
 class _DjDeckScreenState extends State<DjDeckScreen> {
   bool _isVideoMode = false;
+  int _bottomTab = 0; // 0 = Sampler, 1 = Harmonic Mixing
 
   Future<void> _loadTrackToDeck(BuildContext context, DeckSide side) async {
     final fileService = FileService();
@@ -145,6 +148,46 @@ class _DjDeckScreenState extends State<DjDeckScreen> {
                             onMasterVolumeChanged: deckProvider.setMasterVolume,
                             isSmartFaderActive: deckProvider.isSmartFaderActive,
                             onToggleSmartFader: deckProvider.toggleSmartFader,
+
+                            // Deck A Controls
+                            deckAGain: deckProvider.deckAState.gain,
+                            onDeckAGainChanged: (val) =>
+                                deckProvider.setGain(DeckSide.A, val),
+                            deckAHighEq: deckProvider.deckAState.highEq,
+                            onDeckAHighEqChanged: (val) =>
+                                deckProvider.setHighEq(DeckSide.A, val),
+                            deckAMidEq: deckProvider.deckAState.midEq,
+                            onDeckAMidEqChanged: (val) =>
+                                deckProvider.setMidEq(DeckSide.A, val),
+                            deckALowEq: deckProvider.deckAState.lowEq,
+                            onDeckALowEqChanged: (val) =>
+                                deckProvider.setLowEq(DeckSide.A, val),
+                            deckAColorFx: deckProvider.deckAState.fxWetDry,
+                            onDeckAColorFxChanged: (val) =>
+                                deckProvider.setFxWetDry(DeckSide.A, val),
+                            deckAVolume: deckProvider.deckAState.volume,
+                            onDeckAVolumeChanged: (val) =>
+                                deckProvider.setVolume(DeckSide.A, val),
+
+                            // Deck B Controls
+                            deckBGain: deckProvider.deckBState.gain,
+                            onDeckBGainChanged: (val) =>
+                                deckProvider.setGain(DeckSide.B, val),
+                            deckBHighEq: deckProvider.deckBState.highEq,
+                            onDeckBHighEqChanged: (val) =>
+                                deckProvider.setHighEq(DeckSide.B, val),
+                            deckBMidEq: deckProvider.deckBState.midEq,
+                            onDeckBMidEqChanged: (val) =>
+                                deckProvider.setMidEq(DeckSide.B, val),
+                            deckBLowEq: deckProvider.deckBState.lowEq,
+                            onDeckBLowEqChanged: (val) =>
+                                deckProvider.setLowEq(DeckSide.B, val),
+                            deckBColorFx: deckProvider.deckBState.fxWetDry,
+                            onDeckBColorFxChanged: (val) =>
+                                deckProvider.setFxWetDry(DeckSide.B, val),
+                            deckBVolume: deckProvider.deckBState.volume,
+                            onDeckBVolumeChanged: (val) =>
+                                deckProvider.setVolume(DeckSide.B, val),
                           ),
 
                           // Deck B
@@ -165,10 +208,56 @@ class _DjDeckScreenState extends State<DjDeckScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
-                    // Sampler Panel
-                    const SamplerPanelWidget(),
+                    // Bottom Panel (Sampler / Harmonic)
+                    SizedBox(
+                      height: 180,
+                      child: Column(
+                        children: [
+                          // Tab row
+                          Row(
+                            children: [
+                              const SizedBox(width: 16),
+                              _BottomTab(
+                                label: 'SAMPLER',
+                                icon: Icons.piano,
+                                selected: _bottomTab == 0,
+                                onTap: () => setState(() => _bottomTab = 0),
+                              ),
+                              const SizedBox(width: 4),
+                              _BottomTab(
+                                label: 'HARMONIC',
+                                icon: Icons.music_note,
+                                selected: _bottomTab == 1,
+                                onTap: () => setState(() => _bottomTab = 1),
+                              ),
+                              const SizedBox(width: 4),
+                              _BottomTab(
+                                label: 'NEURAL MIX',
+                                icon: Icons.hub_rounded,
+                                selected: _bottomTab == 2,
+                                onTap: () => setState(() => _bottomTab = 2),
+                              ),
+                            ],
+                          ),
+                          // Panel body
+                          Expanded(
+                            child: _bottomTab == 0
+                                ? const SamplerPanelWidget()
+                                : _bottomTab == 1
+                                ? const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 16.0,
+                                      vertical: 4,
+                                    ),
+                                    child: CamelotWheelWidget(),
+                                  )
+                                : _buildNeuralMixPanel(deckProvider),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -176,6 +265,57 @@ class _DjDeckScreenState extends State<DjDeckScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildNeuralMixPanel(DeckProvider deckProvider) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Row(
+        children: [
+          // Deck A stems
+          Expanded(
+            child: StemControlsWidget(
+              isActive: deckProvider.deckAState.isStemsActive,
+              vocals: deckProvider.deckAState.vocalsVolume,
+              drums: deckProvider.deckAState.drumsVolume,
+              harmonics: deckProvider.deckAState.harmonicsVolume,
+              other: deckProvider.deckAState.otherVolume,
+              onToggle: () => deckProvider.toggleStemsMode(DeckSide.A),
+              onVocalsChanged: (v) =>
+                  deckProvider.setStemVolume(DeckSide.A, StemType.vocals, v),
+              onDrumsChanged: (v) =>
+                  deckProvider.setStemVolume(DeckSide.A, StemType.drums, v),
+              onHarmonicsChanged: (v) =>
+                  deckProvider.setStemVolume(DeckSide.A, StemType.harmonics, v),
+              onOtherChanged: (v) =>
+                  deckProvider.setStemVolume(DeckSide.A, StemType.other, v),
+              color: DeckSide.A.color,
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Deck B stems
+          Expanded(
+            child: StemControlsWidget(
+              isActive: deckProvider.deckBState.isStemsActive,
+              vocals: deckProvider.deckBState.vocalsVolume,
+              drums: deckProvider.deckBState.drumsVolume,
+              harmonics: deckProvider.deckBState.harmonicsVolume,
+              other: deckProvider.deckBState.otherVolume,
+              onToggle: () => deckProvider.toggleStemsMode(DeckSide.B),
+              onVocalsChanged: (v) =>
+                  deckProvider.setStemVolume(DeckSide.B, StemType.vocals, v),
+              onDrumsChanged: (v) =>
+                  deckProvider.setStemVolume(DeckSide.B, StemType.drums, v),
+              onHarmonicsChanged: (v) =>
+                  deckProvider.setStemVolume(DeckSide.B, StemType.harmonics, v),
+              onOtherChanged: (v) =>
+                  deckProvider.setStemVolume(DeckSide.B, StemType.other, v),
+              color: DeckSide.B.color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -197,10 +337,6 @@ class _DjDeckScreenState extends State<DjDeckScreen> {
       onKeyLockChanged: (val) => deckProvider.setKeyLock(side, val),
       onTapTempo: () => deckProvider.tapTempo(side),
       onSync: () => deckProvider.syncDeck(side),
-      onHighEqChanged: (val) => deckProvider.setHighEq(side, val),
-      onMidEqChanged: (val) => deckProvider.setMidEq(side, val),
-      onLowEqChanged: (val) => deckProvider.setLowEq(side, val),
-      onGainChanged: (val) => deckProvider.setGain(side, val),
       onEffectChanged: (type) => deckProvider.setEffect(side, type),
       onFxWetDryChanged: (val) => deckProvider.setFxWetDry(side, val),
       onFxActiveChanged: (val) => deckProvider.setFxActive(side, val),
@@ -211,7 +347,6 @@ class _DjDeckScreenState extends State<DjDeckScreen> {
       onLoopLengthChanged: (len) => deckProvider.setLoopLength(side, len),
       onLoopIn: () => deckProvider.loopIn(side),
       onLoopOut: () => deckProvider.loopOut(side),
-      onVolumeChanged: (val) => deckProvider.setVolume(side, val),
       onToggleStems: () => deckProvider.toggleStemsMode(side),
       onVocalsVolumeChanged: (val) =>
           deckProvider.setStemVolume(side, StemType.vocals, val),
@@ -229,6 +364,68 @@ class _DjDeckScreenState extends State<DjDeckScreen> {
       onActivateSavedLoop: (loop) => deckProvider.activateSavedLoop(side, loop),
       onToggleSlicer: () => deckProvider.toggleSlicer(side),
       onJumpToSlice: (index) => deckProvider.jumpToSlice(side, index),
+      onFxXYChanged: (offset) =>
+          deckProvider.setFxXY(side, offset.dx, offset.dy),
+      onToggleScratchBank: () => deckProvider.toggleScratchBankMode(side),
+      onTriggerScratchBank: (index) =>
+          deckProvider.triggerScratchBank(side, index),
+      onReleaseScratchBank: (index) =>
+          deckProvider.releaseScratchBank(side, index),
+      onTriggerCue: () => deckProvider.triggerCue(side),
+    );
+  }
+}
+
+class _BottomTab extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _BottomTab({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? const Color(0xFF00D9FF) : Colors.white38;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: selected
+              ? const Color(0xFF00D9FF).withOpacity(0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+          border: Border(
+            bottom: BorderSide(
+              color: selected ? const Color(0xFF00D9FF) : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

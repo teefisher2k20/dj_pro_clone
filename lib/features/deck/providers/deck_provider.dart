@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 import '../../../core/audio/audio_engine.dart';
 import '../../../core/models/deck_state.dart';
@@ -8,6 +8,7 @@ import '../../../core/services/audio_analysis_service.dart';
 import '../../../core/audio/sync_engine.dart';
 import '../../../core/audio/effects_processor.dart';
 import '../../../core/services/midi_service.dart';
+import '../../../core/services/key_matching_service.dart';
 
 class DeckProvider extends ChangeNotifier {
   final AudioEngine _audioEngine = AudioEngine.instance;
@@ -28,6 +29,50 @@ class DeckProvider extends ChangeNotifier {
   DeckProvider() {
     _deckBState = DeckState(side: DeckSide.B);
   }
+
+  // Default Scratch Banks
+  final List<ScratchBank> _defaultScratchBanks = [
+    ScratchBank(
+      label: 'Ahhh',
+      filePath: 'assets/samples/scratch_ahhh.mp3',
+      color: Colors.purpleAccent,
+    ),
+    ScratchBank(
+      label: 'Fresh',
+      filePath: 'assets/samples/scratch_fresh.mp3',
+      color: Colors.purpleAccent,
+    ),
+    ScratchBank(
+      label: 'Yeah',
+      filePath: 'assets/samples/scratch_yeah.mp3',
+      color: Colors.purpleAccent,
+    ),
+    ScratchBank(
+      label: 'Hit',
+      filePath: 'assets/samples/scratch_hit.mp3',
+      color: Colors.purpleAccent,
+    ),
+    ScratchBank(
+      label: 'Uhh',
+      filePath: 'assets/samples/scratch_uhh.mp3',
+      color: Colors.purpleAccent,
+    ),
+    ScratchBank(
+      label: 'Horn',
+      filePath: 'assets/samples/scratch_horn.mp3',
+      color: Colors.purpleAccent,
+    ),
+    ScratchBank(
+      label: 'Siren',
+      filePath: 'assets/samples/scratch_siren.mp3',
+      color: Colors.purpleAccent,
+    ),
+    ScratchBank(
+      label: 'Laser',
+      filePath: 'assets/samples/scratch_laser.mp3',
+      color: Colors.purpleAccent,
+    ),
+  ];
 
   DeckState get deckAState => _deckAState;
   DeckState get deckBState => _deckBState;
@@ -97,6 +142,9 @@ class DeckProvider extends ChangeNotifier {
       }),
     );
 
+    // Note: We need to be careful not to cycle-update if we are the ones pausing for scratch.
+    // The streams will update the state, which is fine.
+
     _subscriptions.add(
       _audioEngine.deckB.positionStream.listen((position) {
         _deckBState = _deckBState.copyWith(position: position);
@@ -134,6 +182,10 @@ class DeckProvider extends ChangeNotifier {
         detectedBPM: null,
         volume: 1.0, // Initialize volume
       );
+      // Init Scratch Banks
+      if (_deckAState.scratchBanks.isEmpty) {
+        _deckAState = _deckAState.copyWith(scratchBanks: _defaultScratchBanks);
+      }
       notifyListeners();
     } else {
       _deckBState = _deckBState.copyWith(
@@ -143,6 +195,10 @@ class DeckProvider extends ChangeNotifier {
         detectedBPM: null,
         volume: 1.0, // Initialize volume
       );
+      // Init Scratch Banks
+      if (_deckBState.scratchBanks.isEmpty) {
+        _deckBState = _deckBState.copyWith(scratchBanks: _defaultScratchBanks);
+      }
       notifyListeners();
     }
 
@@ -164,6 +220,16 @@ class DeckProvider extends ChangeNotifier {
       }
       notifyListeners();
     }
+
+    // Detect Musical Key (simulated — async, non-blocking)
+    _audioAnalysisService.detectKey(track.filePath).then((key) {
+      if (side == DeckSide.A) {
+        _deckAState = _deckAState.copyWith(detectedKey: key);
+      } else {
+        _deckBState = _deckBState.copyWith(detectedKey: key);
+      }
+      notifyListeners();
+    });
   }
 
   // Playback controls
@@ -193,6 +259,39 @@ class DeckProvider extends ChangeNotifier {
   Future<void> seek(DeckSide side, Duration position) async {
     final deck = side == DeckSide.A ? _audioEngine.deckA : _audioEngine.deckB;
     await deck.seek(position);
+  }
+
+  // Scratching
+  bool _wasPlayingBeforeScratchA = false;
+  bool _wasPlayingBeforeScratchB = false;
+
+  void startScratch(DeckSide side) {
+    // If playing, pause to allow smooth seeking/scratching
+    final state = side == DeckSide.A ? _deckAState : _deckBState;
+    if (state.isPlaying) {
+      if (side == DeckSide.A) {
+        _wasPlayingBeforeScratchA = true;
+      } else {
+        _wasPlayingBeforeScratchB = true;
+      }
+      pause(side);
+    } else {
+      if (side == DeckSide.A) {
+        _wasPlayingBeforeScratchA = false;
+      } else {
+        _wasPlayingBeforeScratchB = false;
+      }
+    }
+  }
+
+  void endScratch(DeckSide side) {
+    // Resume if it was playing
+    bool wasPlaying = side == DeckSide.A
+        ? _wasPlayingBeforeScratchA
+        : _wasPlayingBeforeScratchB;
+    if (wasPlaying) {
+      play(side);
+    }
   }
 
   Future<void> beatJump(DeckSide side, int beats) async {
@@ -388,6 +487,18 @@ class DeckProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setFxXY(DeckSide side, double x, double y) async {
+    final deck = side == DeckSide.A ? _audioEngine.deckA : _audioEngine.deckB;
+    await deck.setFxXY(x, y);
+
+    if (side == DeckSide.A) {
+      _deckAState = _deckAState.copyWith(fxX: x, fxY: y);
+    } else {
+      _deckBState = _deckBState.copyWith(fxX: x, fxY: y);
+    }
+    notifyListeners();
+  }
+
   // Hot Cues
   void setHotCue(DeckSide side, int index) {
     if (side == DeckSide.A) {
@@ -402,6 +513,49 @@ class DeckProvider extends ChangeNotifier {
         cues[index] = _deckBState.position;
         _deckBState = _deckBState.copyWith(hotCues: cues);
       }
+    }
+    notifyListeners();
+  }
+
+  // Main Cue Point Logic
+  Future<void> triggerCue(DeckSide side) async {
+    final state = side == DeckSide.A ? _deckAState : _deckBState;
+
+    if (state.isPlaying) {
+      // If playing, pause and jump to CUE
+      if (state.cuePoint != null) {
+        pause(side);
+        await seek(side, state.cuePoint!);
+      } else {
+        // If no cue, just pause? Or pause and set cue?
+        // Standard is: Pause.
+        pause(side);
+      }
+    } else {
+      // If paused
+      if (state.cuePoint == null) {
+        // Set Cue
+        if (side == DeckSide.A) {
+          _deckAState = _deckAState.copyWith(cuePoint: state.position);
+        } else {
+          _deckBState = _deckBState.copyWith(cuePoint: state.position);
+        }
+      } else {
+        // Jump to Cue
+        await seek(side, state.cuePoint!);
+        // If holding... (requires separate press/release logic)
+        // For simple trigger: just jump.
+      }
+    }
+    notifyListeners();
+  }
+
+  void setCuePoint(DeckSide side) {
+    final state = side == DeckSide.A ? _deckAState : _deckBState;
+    if (side == DeckSide.A) {
+      _deckAState = _deckAState.copyWith(cuePoint: state.position);
+    } else {
+      _deckBState = _deckBState.copyWith(cuePoint: state.position);
     }
     notifyListeners();
   }
@@ -1234,10 +1388,89 @@ class DeckProvider extends ChangeNotifier {
 
     if (padIndex < 0 || padIndex >= 8) return; // Out of range for our 8 pads
 
-    if (event.type == MidiEventType.NoteOn) {
-      playPitchedNote(side, padIndex);
+    if (side == DeckSide.A && _deckAState.isPitchPlayActive) {
+      if (event.type == MidiEventType.NoteOn) {
+        playPitchedNote(side, padIndex);
+      } else {
+        stopPitchedNote(side, padIndex);
+      }
+    } else if (side == DeckSide.B && _deckBState.isPitchPlayActive) {
+      if (event.type == MidiEventType.NoteOn) {
+        playPitchedNote(side, padIndex);
+      } else {
+        stopPitchedNote(side, padIndex);
+      }
+    }
+  }
+
+  // Phase 2 - Scratch Banks
+  void toggleScratchBankMode(DeckSide side) {
+    if (side == DeckSide.A) {
+      _deckAState = _deckAState.copyWith(
+        isScratchBankActive: !_deckAState.isScratchBankActive,
+      );
     } else {
-      stopPitchedNote(side, padIndex);
+      _deckBState = _deckBState.copyWith(
+        isScratchBankActive: !_deckBState.isScratchBankActive,
+      );
+    }
+    notifyListeners();
+  }
+
+  Future<void> triggerScratchBank(DeckSide side, int index) async {
+    final state = side == DeckSide.A ? _deckAState : _deckBState;
+    final deck = side == DeckSide.A ? _audioEngine.deckA : _audioEngine.deckB;
+
+    // Safety check
+    if (index < 0 || index >= state.scratchBanks.length) return;
+
+    // Store playing state
+    if (side == DeckSide.A)
+      _wasPlayingBeforeScratchA = state.isPlaying;
+    else
+      _wasPlayingBeforeScratchB = state.isPlaying;
+
+    if (state.isPlaying) {
+      if (state.isSlipActive) {
+        // Slip Mode: Continue playing but mute
+        await deck.setVolume(0.0);
+      } else {
+        // Normal Mode: Pause
+        // Note: this stops ghost tracking if we were in slip mode but logic implies slip is OFF here.
+        await deck.pause();
+      }
+    }
+
+    // Play Scratch Sample
+    final bank = state.scratchBanks[index];
+    // In real app, we likely pre-load these. Here we set logic to load-on-demand if needed.
+    await deck.scratchBank.loadSample(index, bank.filePath);
+    await deck.scratchBank.trigger(index);
+  }
+
+  Future<void> releaseScratchBank(DeckSide side, int index) async {
+    final state = side == DeckSide.A ? _deckAState : _deckBState;
+    final deck = side == DeckSide.A ? _audioEngine.deckA : _audioEngine.deckB;
+
+    // Stop Scratch
+    await deck.scratchBank.release(index);
+
+    // Restore Main Deck
+    bool wasPlaying = side == DeckSide.A
+        ? _wasPlayingBeforeScratchA
+        : _wasPlayingBeforeScratchB;
+
+    if (wasPlaying) {
+      if (state.isSlipActive) {
+        // Unmute
+        await deck.setVolume(state.volume);
+      } else {
+        // Resume
+        deck.play();
+      }
+    } else {
+      // If it wasn't playing, ensure volume is restored if it was muted (edge case)
+      await deck.setVolume(state.volume);
     }
   }
 }
