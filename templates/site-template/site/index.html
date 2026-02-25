@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Agency — 3D Landing (Spline)</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div id="spline-root" aria-hidden="true"></div>
+
+    <header class="hero">
+      <div class="content">
+        <h1 class="brand">AGENCY</h1>
+        <p class="lead">Bold design. Big ideas. Interactive 3D landing page.</p>
+        <a class="cta" href="#contact">Work with us</a>
+      </div>
+    </header>
+
+    <main>
+      <section id="features" class="panel">
+        <h2>Featured work</h2>
+        <p>Placeholder content — replace or extend via AI agent.</p>
+      </section>
+
+      <section id="contact" class="panel">
+        <h2>Contact</h2>
+        <form
+          id="contact-form"
+          action="https://formspree.io/f/your-form-id"
+          method="POST"
+        >
+          <input name="name" placeholder="Name" required />
+          <input type="email" name="email" placeholder="Email" required />
+          <textarea
+            name="message"
+            placeholder="Tell us about your project"
+            rows="4"
+          ></textarea>
+          <button type="submit">Send</button>
+        </form>
+      </section>
+    </main>
+
+    <script type="module">
+      // Load placeholder Spline URL from companion text file if available
+      async function getSplineURL() {
+        try {
+          const r = await fetch("./assets/spline-url.txt");
+          return (await r.text()).trim() || "PLACEHOLDER_SPLINE_URL";
+        } catch (e) {
+          return "PLACEHOLDER_SPLINE_URL";
+        }
+      }
+
+      (async () => {
+        const url = await getSplineURL();
+
+        // CDN ESM viewer import (no bundler required)
+        const mod =
+          await import("https://cdn.jsdelivr.net/npm/@splinetool/viewer@latest/dist/spline-viewer.mjs");
+        const Spline = mod.default || mod.Spline || mod;
+
+        // create viewer
+        const viewer = new Spline({
+          url,
+          container: document.getElementById("spline-root"),
+        });
+
+        // Basic follow-mouse effect (non-blocking)
+        window.addEventListener("mousemove", (e) => {
+          const h = window.innerHeight,
+            w = window.innerWidth;
+          const nx = (e.clientX / w - 0.5) * 0.6;
+          const ny = (e.clientY / h - 0.5) * 0.6;
+          try {
+            viewer.cameraTarget.set(nx, ny, 0);
+          } catch (err) {
+            /* ignore if API differs */
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

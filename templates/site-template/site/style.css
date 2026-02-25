@@ -1,0 +1,105 @@
+:root {
+  --bg: #000;
+  --accent: #ff4d6d;
+  --muted: #bdbdbd;
+  --font-sans:
+    Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#spline-root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: #fff;
+  overflow: hidden;
+}
+
+/* full-screen Spline container behind content */
+#spline-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  pointer-events: none; /* allow interactions to pass through; agent can change */
+}
+
+/* content on top */
+.hero {
+  position: relative;
+  z-index: 2;
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6vh 4vw;
+  backdrop-filter: blur(0);
+}
+
+.brand {
+  font-weight: 800;
+  font-size: clamp(36px, 8vw, 84px);
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.lead {
+  color: var(--muted);
+  margin-top: 0.5rem;
+  font-size: 1.05rem;
+}
+
+.cta {
+  display: inline-block;
+  margin-top: 1.2rem;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.75rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.panel {
+  position: relative;
+  z-index: 2;
+  padding: 6vh 6vw;
+  background: transparent;
+  color: #fff;
+}
+form input,
+form textarea {
+  width: 100%;
+  padding: 0.8rem;
+  margin: 0.4rem 0;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  color: #fff;
+}
+button {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  padding: 0.8rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+@media (min-width: 900px) {
+  .content {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+}

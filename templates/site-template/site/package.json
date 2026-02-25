@@ -1,0 +1,9 @@
+{
+  "name": "dj-pro-3d-site",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "npx serve . -l 5000"
+  },
+  "devDependencies": {}
+}

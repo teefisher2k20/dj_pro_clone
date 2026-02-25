@@ -1,0 +1,7 @@
+{
+  "liveServer.settings.root": "templates/site-template/site",
+  "files.exclude": {
+    "**/.git": false
+  },
+  "editor.formatOnSave": true
+}
